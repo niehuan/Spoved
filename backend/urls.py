@@ -13,6 +13,10 @@ urlpatterns = [
     path('user/info/', views.UserInfoView.as_view(), name='user_info'),
     # path('user/logout/', views.UserLogoutView.as_view(), name='user_logout'),
     path('mg/accounts/user/',views.UserHandlerView.as_view(),name='user_handler'),
+    path('mg/accounts/user_all/',views.UserAllHandlerView.as_view(),name='userAll_handler'),
     path('mg/accounts/func/',views.FuncHandlerView.as_view(),name='func_handler'),
+    path('mg/accounts/func_all/',views.FuncALLHandlerView.as_view(),name='funcAll_handler'),
+    path('mg/accounts/role/',views.RoleHandlerView.as_view(),name='role_handler'),
+    path('mg/accounts/role_func/',views.RoleFuncHandlerView.as_view(),name='roleFunc_handler'),
 ]
 

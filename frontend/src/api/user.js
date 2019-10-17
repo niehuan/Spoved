@@ -80,6 +80,26 @@ export function getFuncslist(query) {
     })
 }
 
+//获取后端所有权限列表
+export function getFuncAll(query) {
+    return request({
+        baseURL: 'http://127.0.0.1:8000/api',
+        url: '/mg/accounts/func_all/',
+        method: 'get',
+        params: query
+    })
+}
+
+//获取后端所有用户列表
+export function getUserAll(query) {
+    return request({
+        baseURL: 'http://127.0.0.1:8000/api',
+        url: '/mg/accounts/user_all/',
+        method: 'get',
+        params: query
+    })
+}
+
 //新增权限
 export function createFunc(data) {
     return request({
@@ -107,6 +127,26 @@ export function delFunc(data) {
         baseURL: 'http://127.0.0.1:8000/api',
         url: '/mg/accounts/func/',
         method: 'delete',
+        data
+    })
+}
+
+//获取角色
+export function getRoleslist(query) {
+    return request({
+        baseURL: 'http://127.0.0.1:8000/api',
+        url: '/mg/accounts/role/',
+        method: 'get',
+        params: query
+    })
+}
+
+//添加或修改角色所拥有的权限
+export function createRolePerms(data) {
+    return request({
+        baseURL: 'http://127.0.0.1:8000/api',
+        url: '/mg/accounts/role_func/',
+        method: 'post',
         data
     })
 }

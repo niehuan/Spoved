@@ -1,21 +1,10 @@
 <template>
     <div class="app-container">
-        <div class="filter-container">
-            <el-select v-model="listQuery.type" placeholder="Type" clearable class="filter-item" style="width: 130px">
-                <el-option v-for="item in searchTypeOptions" :key="item.key"
-                           :label="item.display_name" :value="item.key"/>
-            </el-select>
-            <el-input v-model="listQuery.title" placeholder="输入关键字搜索" style="width: 200px;" class="filter-item"
-                      @keyup.enter.native="handleFilter"
-            />
-            <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="handleFilter">
-                搜索
-            </el-button>
-            <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit"
-                       @click="handleCreate">
-                新增
-            </el-button>
-        </div>
+        <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit"
+                   @click="handleCreate">
+            新增
+        </el-button>
+
         <el-table
                 :key="tableKey"
                 v-loading="listLoading"
@@ -24,24 +13,9 @@
                 fit
                 highlight-current-row
                 style="width: 100%">
-            <!--<el-table-column prop="id" label="ID" align="center">-->
-            <!--<template slot-scope="scope">-->
-            <!--<span>{{ scope.row.id }}</span>-->
-            <!--</template>-->
-            <!--</el-table-column>-->
-            <el-table-column label="权限名称" align="center">
+            <el-table-column label="角色" align="center">
                 <template slot-scope="scope">
                     <span>{{ scope.row.name }}</span>
-                </template>
-            </el-table-column>
-            <el-table-column label="请求方法" align="center">
-                <template slot-scope="scope">
-                    <span>{{ scope.row.method_type }}</span>
-                </template>
-            </el-table-column>
-            <el-table-column label="请求路径" align="center">
-                <template slot-scope="scope">
-                    <span>{{ scope.row.url }}</span>
                 </template>
             </el-table-column>
             <el-table-column label="状态" align="center">
@@ -54,11 +28,20 @@
                 </template>
             </el-table-column>
             <el-table-column label="操作" align="center" class-name="small-padding fixed-width">
-                <template slot-scope="{row}">
-                    <el-button type="primary" size="mini" @click="handleUpdate(row)">
-                        更新
+                <template slot-scope="scope">
+                    <el-button type="primary" size="mini" @click="handleUser(scope)">
+                        用户
                     </el-button>
-                    <el-button type="danger" size="mini" @click="deleteData(row)">
+                    <el-button type="primary" size="mini" @click="handleUpdate(scope)">
+                        组件
+                    </el-button>
+                    <el-button type="primary" size="mini" @click="handleUpdate(scope)">
+                        菜单
+                    </el-button>
+                    <el-button type="primary" size="mini" @click="handlePerms(scope)">
+                        权限
+                    </el-button>
+                    <el-button type="danger" size="mini" @click="deleteData(scope)">
                         删除
                     </el-button>
                 </template>
@@ -69,26 +52,26 @@
                     @pagination="getList"/>
 
         <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible">
-            <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="80px"
+            <el-form ref="dataForm" :model="temp" label-position="left" label-width="80px"
                      style="width: 400px; margin-left:50px;">
-                <el-form-item label="请求方法" prop="method_type">
-                    <el-select v-model="temp.method_type" class="filter-item" placeholder="Please select">
-                        <el-option v-for="item in methodTypeOptions" :key="item.key" :label="item.display_name"
-                                   :value="item.key"/>
-                    </el-select>
-                </el-form-item>
-                <el-form-item label="权限名称" prop="name">
-                    <el-input v-model="temp.name"/>
-                </el-form-item>
-                <el-form-item label="请求路径" prop="url">
-                    <el-input v-model="temp.url"/>
+                <el-form-item :label="textMap[dialogStatus]">
+                    <el-tree
+                            ref="tree"
+                            :check-strictly="checkStrictly"
+                            :data="mixinData"
+                            :props="defaultProps"
+                            show-checkbox
+                            node-key="id"
+                            class="permission-tree"
+                    />
                 </el-form-item>
             </el-form>
             <div slot="footer" class="dialog-footer">
-                <el-button @click="dialogFormVisible = false">
+                <el-button type="danger" @click="dialogFormVisible = false">
                     取消
                 </el-button>
-                <el-button type="primary" @click="dialogStatus==='create'?createData():updateData()">
+                <el-button type="primary"
+                           @click="dialogStatus==='user'?createUserData():dialogStatus==='cpn'?createCpnData():dialogStatus==='menu'?createMenuData():createPermsData()">
                     确定
                 </el-button>
             </div>
@@ -98,7 +81,16 @@
 </template>
 
 <script>
-    import {getFuncslist, createFunc, delFunc, updateFunc} from '@/api/user'
+    import {
+        getUserAll,
+        createRolePerms,
+        getRoleFunc,
+        getFuncAll,
+        getRoleslist,
+        createFunc,
+        delFunc,
+        updateFunc
+    } from '@/api/user'
     import waves from '@/directive/waves' // waves directive
     import {parseTime} from '@/utils'
     import Pagination from '@/components/Pagination' // secondary package based on el-pagination
@@ -111,11 +103,7 @@
         {key: 'PATCH', display_name: 'PATCH'},
         {key: 'ALL', display_name: 'ALL'}
     ]
-    const searchTypeOptions = [
-        {key: 'name', display_name: '权限名称'},
-        {key: 'url', display_name: '请求路径'},
-        {key: 'method_type', display_name: '请求方法'}
-    ]
+
     export default {
         name: 'user',
         components: {Pagination},
@@ -134,30 +122,35 @@
                     type: undefined,
                     sort: '+id'
                 },
-                methodTypeOptions,
-                searchTypeOptions,
                 //dialog 状态选择框
-                // statusOptions: ['激活', '锁定'],
+                methodTypeOptions,
+                checkStrictly: false,
+                total_data: [],
                 temp: {
                     // id: undefined,
                     name: '',
-                    method_type: '',
-                    url: ''
+                    currentPerm: [],
+                    currentUser: [],
                 },
                 dialogFormVisible: false,
                 dialogStatus: '',
                 //复用时的动态title
                 textMap: {
-                    update: '更新权限',
-                    create: '新建权限'
+                    user: '用户',
+                    cpn: '组件',
+                    menu: '菜单',
+                    perms: '权限',
                 },
-                //dialog里表单字段验证规则
-                rules: {
-                    name: [{required: true, message: '权限名称不能为空', trigger: 'blur'}],
-                    url: [{required: true, message: '请求路径不能为空', trigger: 'blur'}],
-                    method_type: [{required: true, message: '请求方法不能为空', trigger: 'change'}],
-                },
+                defaultProps: {
+                    children: '',
+                    label: ''
+                }
             }
+        },
+        computed: {
+            mixinData() {
+                return this.total_data
+            },
         },
         created() {
             this.getList()
@@ -165,11 +158,42 @@
         methods: {
             getList() {
                 this.listLoading = true
-                getFuncslist(this.listQuery).then(response => {
+                getRoleslist(this.listQuery).then(response => {
                     this.list = response.data
                     this.total = response.count
                     this.listLoading = false
 
+                })
+            },
+            //获取全部权限
+            async getAllperms() {
+                this.defaultProps.label = 'name'
+                const res = await getFuncAll({flag: 1})
+                this.total_data = res.data
+            },
+            //获取所属角色权限,返回的是权限表id，如[1,3,5,6]。
+            async getRoleperms(name) {
+                const res = await getFuncAll({flag: 0, name: name})
+                this.$nextTick(() => {
+                    this.$refs.tree.setCheckedKeys(res.data)
+                    this.temp.currentPerm = res.data
+                    this.temp.name = name
+                })
+            },
+            //获取全部用户
+            async getAllusers() {
+                this.defaultProps.label = 'username'
+                this.$refs.tree.setCheckedKeys([])
+                const res = await getUserAll({flag: 1})
+                this.total_data = res.data
+            },
+            //获取所属角色用户,返回的是用户表id，如[1,3,5,6]。
+            async getRoleusers(name) {
+                const res = await getUserAll({flag: 0, name: name})
+                this.$nextTick(() => {
+                    this.$refs.tree.setCheckedKeys(res.data)
+                    this.temp.currentUser = res.data
+                    this.temp.name = name
                 })
             },
             handleFilter() {
@@ -180,8 +204,7 @@
                 this.temp = {
                     // id: undefined,
                     name: '',
-                    method_type: '',
-                    url: ''
+                    currentPerm: []
                 }
             },
             handleCreate() {
@@ -192,6 +215,23 @@
                 this.$nextTick(() => {
                     this.$refs['dataForm'].clearValidate()
                 })
+            },
+            //处理角色权限变更
+            handlePerms(scope) {
+                this.getAllperms()
+                this.getRoleperms(scope.row.name)
+                this.dialogStatus = 'perms'
+                this.dialogFormVisible = true
+                this.$nextTick(() => {
+                    this.$refs['dataForm'].clearValidate()
+                })
+            },
+            //处理角色用户变更
+            handleUser(scope) {
+                this.getAllusers()
+                this.getRoleusers(scope.row.name)
+                this.dialogStatus = 'user'
+                this.dialogFormVisible = true
             },
             handleUpdate(row) {
                 this.temp = Object.assign({}, row) //es6 深拷贝
@@ -219,12 +259,40 @@
                     }
                 })
             },
+            createUserData() {
+                console.log(1);
+            },
+            createCpnData() {
+                console.log(2);
+            },
+            createMenuData() {
+                console.log(3);
+            },
+            //添加修改该角色所拥有的权限
+            createPermsData() {
+                const checkedKeys = this.$refs.tree.getCheckedKeys()
+                const beforeChecked = this.temp.currentPerm
+                const roleNameChecked = this.temp.name
+                createRolePerms({
+                    newRolePerms: checkedKeys,
+                    oldRolePerms: beforeChecked,
+                    name: roleNameChecked
+                }).then(() => {
+                    this.dialogFormVisible = false
+                    this.$notify({
+                        title: 'Success',
+                        message: '修改成功',
+                        type: 'success',
+                        duration: 3000
+                    })
+                })
+            },
             deleteData(row) {
                 this.$confirm('此操作将永久删除该数据, 是否继续?', '提示', {
                     confirmButtonText: '确定',
                     cancelButtonText: '取消',
                     type: 'warning'
-                }).then(async() => {
+                }).then(async () => {
                     await delFunc({func_id: row.id})
                     const index = this.list.indexOf(row)
                     this.list.splice(index, 1)
@@ -234,7 +302,9 @@
                         duration: 2000
                     })
 
-                }).catch(err => { console.error(err) })
+                }).catch(err => {
+                    console.error(err)
+                })
 
 
             },
@@ -265,3 +335,11 @@
         }
     }
 </script>
+
+<style lang="scss" scoped>
+    .app-container {
+        .permission-tree {
+            margin-bottom: 30px;
+        }
+    }
+</style>

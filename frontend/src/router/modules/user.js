@@ -21,6 +21,12 @@ const userRouter = {
             component: () => import('@/views/usermanage/functions'),
             name: 'functions',
             meta: { title: '权限列表' }
+        },
+        {
+            path: 'role',
+            component: () => import('@/views/usermanage/role'),
+            name: 'role',
+            meta: { title: '角色管理' }
         }
     ]
 }

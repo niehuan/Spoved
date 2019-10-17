@@ -6,7 +6,6 @@ from django.contrib.auth import authenticate
 from .models import UserInfo, Permission
 from rest_framework.permissions import BasePermission
 
-
 # 手动创建token
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
@@ -27,16 +26,7 @@ class CheckPermission(BasePermission):
         except AttributeError:
             return None
 
-    message = {
-        'data': {
-            'data': {
-                'message': 1111
-            },
-            'code': 403,
-            'message': 2222
-        },
-        'message': 33333
-    }
+    message = '无权访问'
 
     def has_permission(self, request, view):
         """
@@ -244,11 +234,121 @@ class FuncHandlerView(APIView):
                 func_info.delete()
             except Exception as e:
                 return Response({
-                    'message': "数据删除失败:" + e,
+                    'message': "数据删除失败:{}".format(e),
                     'code': 400
                 })
             return Response({
                 'code': 20000,
                 'data': 'success'
-            }
-            )
+            })
+
+
+class FuncALLHandlerView(APIView):
+    '''
+    角色管理里面获取全部权限接口
+    '''
+
+    def get(self, request, *args, **kwargs):
+        flag = int(request.query_params.get('flag'))
+        name = request.query_params.get('name')
+        if flag:
+            perm_info = Permission.objects.all()
+            serializer = PermissionSerializer(perm_info, many=True)
+            return Response({
+                'data': serializer.data,
+                'code': 20000,
+            })
+        else:
+            item = Role.objects.filter(name=name)
+            perms = item.values(
+                'permissions__id'
+            ).distinct()
+            perms_list = [p['permissions__id'] for p in perms]
+            return Response({
+                'data': perms_list,
+                'code': 20000,
+            })
+
+
+class RoleFuncHandlerView(APIView):
+    '''
+    角色管理里面添加或修改角色所拥有的权限
+    '''
+
+    def post(self, request, *args, **kwargs):
+        newRolePerms = request.data.get('newRolePerms')
+        oldRolePerms = request.data.get('oldRolePerms')
+        roleName = request.data.get('name')
+        delRolePerms = list(set(oldRolePerms).difference(set(newRolePerms)))
+        addRolePerms = list(set(newRolePerms).difference(set(oldRolePerms)))
+        if delRolePerms:
+            try:
+                Role.objects.get(name=roleName).permissions.remove(*delRolePerms)
+            except Exception as e:
+                return Response({
+                    'message': "数据删除失败:{}".format(e),
+                    'code': 400
+                })
+        elif addRolePerms:
+            try:
+                Role.objects.get(name=roleName).permissions.add(*addRolePerms)
+            except Exception as e:
+                return Response({
+                    'message': "数据修改失败：{}".format(e),
+                    'code': 400
+                })
+        return Response({
+            'code': 20000,
+            'data': 'success'
+        })
+
+class UserAllHandlerView(APIView):
+    '''
+    角色管理里面获取全部用户接口
+    '''
+    def get(self, request, *args, **kwargs):
+        flag = int(request.query_params.get('flag'))
+        name = request.query_params.get('name')
+        if flag:
+            user_info = UserInfo.objects.all()
+            serializer = UserInfoSerializer(user_info, many=True)
+            return Response({
+                'data': serializer.data,
+                'code': 20000,
+            })
+        else:
+            item = Role.objects.filter(name=name)
+            users = item.values(
+                'roleInfo__id'
+            ).distinct()
+            users_list = [p['roleInfo__id'] for p in users]
+            return Response({
+                'data': users_list,
+                'code': 20000,
+            })
+
+class RoleHandlerView(APIView):
+    '''
+    角色管理
+    '''
+
+    def get(self, request, *args, **kwargs):
+        page_size = int(request.query_params.get('page', 1))
+        limit = int(request.query_params.get('limit', 20))
+        value = request.query_params.get('title', None)
+        key = request.query_params.get('type', None)
+        limit_start = (page_size - 1) * limit
+        limit_end = page_size * limit
+        if key and value:
+            count = Role.objects.filter(**{key: value}).count()
+            role_info = Role.objects.filter(**{key: value}).order_by('id')[limit_start:limit_end]
+            serializer = RoleSerializer(role_info, many=True)
+        else:
+            count = Role.objects.all().count()
+            role_info = Role.objects.all()[limit_start:limit_end]
+            serializer = RoleSerializer(role_info, many=True)
+        return Response({
+            'data': serializer.data,
+            'code': 20000,
+            'count': count
+        })
