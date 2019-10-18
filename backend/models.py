@@ -73,7 +73,7 @@ class UserInfo(AbstractUser):
     """
     avatar = models.ImageField(upload_to="avatar", null=True, verbose_name='头像')
     introduction = models.CharField(max_length=128,blank=True,null=True,verbose_name='个人说明')
-    roles = models.ManyToManyField("Role",verbose_name='角色',blank=True, related_name='roleInfo')
+    roles = models.ManyToManyField("Role",verbose_name='角色',blank=True)
     department = models.CharField(max_length=32, blank=True, null=True, verbose_name='部门')
     tel = models.CharField(max_length=11,default='',verbose_name='手机号',blank=True)
 

@@ -84,6 +84,7 @@
     import {
         getUserAll,
         createRolePerms,
+        createRoleUsers,
         getRoleFunc,
         getFuncAll,
         getRoleslist,
@@ -130,7 +131,7 @@
                     // id: undefined,
                     name: '',
                     currentPerm: [],
-                    currentUser: [],
+                    currentUser: undefined
                 },
                 dialogFormVisible: false,
                 dialogStatus: '',
@@ -183,7 +184,7 @@
             //获取全部用户
             async getAllusers() {
                 this.defaultProps.label = 'username'
-                this.$refs.tree.setCheckedKeys([])
+                // this.$refs.tree.setCheckedKeys([])
                 const res = await getUserAll({flag: 1})
                 this.total_data = res.data
             },
@@ -232,6 +233,9 @@
                 this.getRoleusers(scope.row.name)
                 this.dialogStatus = 'user'
                 this.dialogFormVisible = true
+                this.$nextTick(() => {
+                    this.$refs['dataForm'].clearValidate()
+                })
             },
             handleUpdate(row) {
                 this.temp = Object.assign({}, row) //es6 深拷贝
@@ -259,8 +263,24 @@
                     }
                 })
             },
+            //添加修改该角色所拥有的用户
             createUserData() {
-                console.log(1);
+                const checkedKeys = this.$refs.tree.getCheckedKeys()
+                const beforeChecked = this.temp.currentUser
+                const roleNameChecked = this.temp.name
+                createRoleUsers({
+                    newRoleUsers: checkedKeys,
+                    oldRoleUsers: beforeChecked,
+                    name: roleNameChecked
+                }).then(() => {
+                    this.dialogFormVisible = false
+                    this.$notify({
+                        title: 'Success',
+                        message: '修改成功',
+                        type: 'success',
+                        duration: 3000
+                    })
+                })
             },
             createCpnData() {
                 console.log(2);

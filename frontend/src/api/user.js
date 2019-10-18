@@ -150,3 +150,12 @@ export function createRolePerms(data) {
         data
     })
 }
+
+export function createRoleUsers(data) {
+    return request({
+        baseURL: 'http://127.0.0.1:8000/api',
+        url: '/mg/accounts/role_user/',
+        method: 'post',
+        data
+    })
+}

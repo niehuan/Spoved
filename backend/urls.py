@@ -18,5 +18,6 @@ urlpatterns = [
     path('mg/accounts/func_all/',views.FuncALLHandlerView.as_view(),name='funcAll_handler'),
     path('mg/accounts/role/',views.RoleHandlerView.as_view(),name='role_handler'),
     path('mg/accounts/role_func/',views.RoleFuncHandlerView.as_view(),name='roleFunc_handler'),
+    path('mg/accounts/role_user/',views.RoleUserHandlerView.as_view(),name='roleUser_handler'),
 ]
 

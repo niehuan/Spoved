@@ -5,6 +5,7 @@ from rest_framework_jwt.settings import api_settings
 from django.contrib.auth import authenticate
 from .models import UserInfo, Permission
 from rest_framework.permissions import BasePermission
+from .utils import removeNone
 
 # 手动创建token
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
@@ -277,7 +278,7 @@ class RoleFuncHandlerView(APIView):
 
     def post(self, request, *args, **kwargs):
         newRolePerms = request.data.get('newRolePerms')
-        oldRolePerms = request.data.get('oldRolePerms')
+        oldRolePerms = removeNone(request.data.get('oldRolePerms'))
         roleName = request.data.get('name')
         delRolePerms = list(set(oldRolePerms).difference(set(newRolePerms)))
         addRolePerms = list(set(newRolePerms).difference(set(oldRolePerms)))
@@ -289,7 +290,7 @@ class RoleFuncHandlerView(APIView):
                     'message': "数据删除失败:{}".format(e),
                     'code': 400
                 })
-        elif addRolePerms:
+        if addRolePerms:
             try:
                 Role.objects.get(name=roleName).permissions.add(*addRolePerms)
             except Exception as e:
@@ -319,13 +320,44 @@ class UserAllHandlerView(APIView):
         else:
             item = Role.objects.filter(name=name)
             users = item.values(
-                'roleInfo__id'
+                'userinfo__id'
             ).distinct()
-            users_list = [p['roleInfo__id'] for p in users]
+            users_list = [p['userinfo__id'] for p in users]
             return Response({
                 'data': users_list,
                 'code': 20000,
             })
+
+class RoleUserHandlerView(APIView):
+    '''
+    角色管理里面添加或修改角色所拥有的用户
+    '''
+    def post(self, request, *args, **kwargs):
+        newRoleUsers = request.data.get('newRoleUsers')
+        oldRoleUsers = removeNone(request.data.get('oldRoleUsers'))
+        roleName = request.data.get('name')
+        delRoleUsers = list(set(oldRoleUsers).difference(set(newRoleUsers)))
+        addRoleUsers = list(set(newRoleUsers).difference(set(oldRoleUsers)))
+        if delRoleUsers:
+            try:
+                Role.objects.get(name=roleName).userinfo_set.remove(*delRoleUsers)
+            except Exception as e:
+                return Response({
+                    'message': "数据删除失败:{}".format(e),
+                    'code': 400
+                })
+        if addRoleUsers:
+            try:
+                Role.objects.get(name=roleName).userinfo_set.add(*addRoleUsers)
+            except Exception as e:
+                return Response({
+                    'message': "数据修改失败：{}".format(e),
+                    'code': 400
+                })
+        return Response({
+            'code': 20000,
+            'data': 'success'
+        })
 
 class RoleHandlerView(APIView):
     '''
