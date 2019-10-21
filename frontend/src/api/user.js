@@ -151,10 +151,30 @@ export function createRolePerms(data) {
     })
 }
 
+//添加或修改角色所拥有的用户
 export function createRoleUsers(data) {
     return request({
         baseURL: 'http://127.0.0.1:8000/api',
         url: '/mg/accounts/role_user/',
+        method: 'post',
+        data
+    })
+}
+
+//获取后端所有菜单
+export function getMenuAll(query) {
+    return request({
+        baseURL: 'http://127.0.0.1:8000/api',
+        url: '/mg/accounts/menu_all/',
+        method: 'get',
+        params: query
+    })
+}
+
+export function createRoleMenu(data) {
+    return request({
+        baseURL: 'http://127.0.0.1:8000/api',
+        url: '/mg/accounts/role_menu/',
         method: 'post',
         data
     })

@@ -32,10 +32,10 @@
                     <el-button type="primary" size="mini" @click="handleUser(scope)">
                         用户
                     </el-button>
-                    <el-button type="primary" size="mini" @click="handleUpdate(scope)">
+                    <el-button type="primary" size="mini" @click="handleCpn(scope)">
                         组件
                     </el-button>
-                    <el-button type="primary" size="mini" @click="handleUpdate(scope)">
+                    <el-button type="primary" size="mini" @click="handleMenu(scope)">
                         菜单
                     </el-button>
                     <el-button type="primary" size="mini" @click="handlePerms(scope)">
@@ -82,6 +82,8 @@
 
 <script>
     import {
+        createRoleMenu,
+        getMenuAll,
         getUserAll,
         createRolePerms,
         createRoleUsers,
@@ -131,7 +133,8 @@
                     // id: undefined,
                     name: '',
                     currentPerm: [],
-                    currentUser: undefined
+                    currentUser: undefined,
+                    currentMenu: undefined
                 },
                 dialogFormVisible: false,
                 dialogStatus: '',
@@ -197,6 +200,21 @@
                     this.temp.name = name
                 })
             },
+            //获取全部菜单
+            async getAllmenu() {
+                this.defaultProps.label = 'name'
+                const res = await getMenuAll({flag: 1})
+                this.total_data = res.data
+            },
+            //获取所属角色菜单
+            async getRolemenu(name) {
+                const res = await getMenuAll({flag: 0, name: name})
+                this.$nextTick(() => {
+                    this.$refs.tree.setCheckedKeys(res.data)
+                    this.temp.currentMenu = res.data
+                    this.temp.name = name
+                })
+            },
             handleFilter() {
                 this.listQuery.page = 1
                 this.getList()
@@ -232,6 +250,24 @@
                 this.getAllusers()
                 this.getRoleusers(scope.row.name)
                 this.dialogStatus = 'user'
+                this.dialogFormVisible = true
+                this.$nextTick(() => {
+                    this.$refs['dataForm'].clearValidate()
+                })
+            },
+            //处理角色组件变更
+            handleCpn(scope) {
+                this.dialogStatus = 'cpn'
+                this.dialogFormVisible = true
+                this.$nextTick(() => {
+                    this.$refs['dataForm'].clearValidate()
+                })
+            },
+            //处理角色菜单变更
+            handleMenu(scope) {
+                this.getAllmenu()
+                this.getRolemenu(scope.row.name)
+                this.dialogStatus = 'menu'
                 this.dialogFormVisible = true
                 this.$nextTick(() => {
                     this.$refs['dataForm'].clearValidate()
@@ -285,8 +321,24 @@
             createCpnData() {
                 console.log(2);
             },
+            //添加修改该角色所拥有的菜单
             createMenuData() {
-                console.log(3);
+                const checkedKeys = this.$refs.tree.getCheckedKeys()
+                const beforeChecked = this.temp.currentMenu
+                const roleNameChecked = this.temp.name
+                createRoleMenu({
+                    newRoleMenu: checkedKeys,
+                    oldRoleMenu: beforeChecked,
+                    name: roleNameChecked
+                }).then(() => {
+                    this.dialogFormVisible = false
+                    this.$notify({
+                        title: 'Success',
+                        message: '修改成功',
+                        type: 'success',
+                        duration: 3000
+                    })
+                })
             },
             //添加修改该角色所拥有的权限
             createPermsData() {

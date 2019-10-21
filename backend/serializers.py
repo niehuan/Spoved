@@ -69,3 +69,11 @@ class RoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Role
         fields = '__all__'
+
+class MenuSerializer(serializers.ModelSerializer):
+    '''
+    菜单序列化
+    '''
+    class Meta:
+        model = Munu
+        fields = '__all__'

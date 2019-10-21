@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_jwt.settings import api_settings
 from django.contrib.auth import authenticate
-from .models import UserInfo, Permission
+from .models import *
 from rest_framework.permissions import BasePermission
 from .utils import removeNone
 
@@ -383,4 +383,57 @@ class RoleHandlerView(APIView):
             'data': serializer.data,
             'code': 20000,
             'count': count
+        })
+
+class MenuALLHandlerView(APIView):
+    '''
+    角色管理里面获取全部菜单接口
+    '''
+    def get(self, request, *args, **kwargs):
+        flag = int(request.query_params.get('flag'))
+        name = request.query_params.get('name')
+        if flag:
+            menu_info = Munu.objects.all()
+            serializer = MenuSerializer(menu_info, many=True)
+            return Response({
+                'data': serializer.data,
+                'code': 20000,
+            })
+        else:
+            item = Role.objects.filter(name=name)
+            menus = item.values(
+                'menus__id'
+            ).distinct()
+            menus_list = [p['menus__id'] for p in menus]
+            return Response({
+                'data': menus_list,
+                'code': 20000,
+            })
+
+class RoleMenuHandlerView(APIView):
+    def post(self, request, *args, **kwargs):
+        newRoleMenu = request.data.get('newRoleMenu')
+        oldRoleMenu = removeNone(request.data.get('oldRoleMenu'))
+        roleName = request.data.get('name')
+        delRoleMenu = list(set(oldRoleMenu).difference(set(newRoleMenu)))
+        addRoleMenu = list(set(newRoleMenu).difference(set(oldRoleMenu)))
+        if delRoleMenu:
+            try:
+                Role.objects.get(name=roleName).menus.remove(*delRoleMenu)
+            except Exception as e:
+                return Response({
+                    'message': "数据删除失败:{}".format(e),
+                    'code': 400
+                })
+        if addRoleMenu:
+            try:
+                Role.objects.get(name=roleName).menus.add(*addRoleMenu)
+            except Exception as e:
+                return Response({
+                    'message': "数据修改失败：{}".format(e),
+                    'code': 400
+                })
+        return Response({
+            'code': 20000,
+            'data': 'success'
         })

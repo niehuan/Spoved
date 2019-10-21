@@ -19,5 +19,7 @@ urlpatterns = [
     path('mg/accounts/role/',views.RoleHandlerView.as_view(),name='role_handler'),
     path('mg/accounts/role_func/',views.RoleFuncHandlerView.as_view(),name='roleFunc_handler'),
     path('mg/accounts/role_user/',views.RoleUserHandlerView.as_view(),name='roleUser_handler'),
+    path('mg/accounts/menu_all/',views.MenuALLHandlerView.as_view(),name='menuAll_handler'),
+    path('mg/accounts/role_menu/',views.RoleMenuHandlerView.as_view(),name='roleMenu_handler'),
 ]
 
